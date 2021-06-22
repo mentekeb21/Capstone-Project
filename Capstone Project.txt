@@ -1,0 +1,157 @@
+# 311 Complaints that are Related to Housing and buildings The Department of Housing and Preservation and development of New York City
+
+
+# Importing important libraries
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+%matplotlib inline
+
+# import and read the data
+df_data_1 = pd.read_csv("311_Service_Requests_from_2010_to_Present_min.csv")
+df_data_1.head()
+
+BX_df = pd.read_csv('BX_18v1.csv')
+BX_df.head()
+
+# Data processing 
+
+BX_df = BX_df['Address', 'BldgArea', 'BldgDepth', 'BuiltFAR', 'CommFAR', 'FacilFAR', 'Lot', 'LotArea', 'LotDepth', 'NumBldgs', 'NumFloors', 'OfficeArea', 'ResArea', 'ResidFAR', 'RetailArea', 'YearBuilt', 'YearAlter1', 'ZipCode', 'YCoord', 'XCoord']
+
+
+# Parsing and Formatting Date with Datetime
+
+df_data_1['Created Date'] = pd.to_datetime(df_data_1['Created Date'])
+df_data_1.sort_values(by=['Created Date'], inplace=True, ascending=False)
+df_data_1.tail()
+
+# The type of complaints should the department of housing preservation and Development of new York  focus on
+
+Compl= df_data_1['Complaint Type'].value_counts()
+Compl
+
+AA =['HEAT/HOT WATER', 'HEATING']
+filt=df_data_1['Complaint Type'].isin(AA)
+
+BB= df_data_1.loc[filt]
+BB.head()
+
+# To identify the specific Borough which has higher complaints
+
+group = BB[['Complaint Type', 'Borough']]
+CC = group.groupby(['Borough'], as_index= False).count()
+CC
+
+# highest compliant by specific Zip cod
+group1 = BB[['Complaint Type', 'Incident Zip']]
+CC1 = group1.groupby(['Incident Zip'], as_index= False).count()
+CC1.sort_values(by=['Complaint Type'], ascending= False)
+CC1
+
+# highest compliant by specific address 
+
+group2 = BB[['Complaint Type', 'Incident Address']]
+DD1 = group2.groupby(['Incident Address'], as_index= False).count()
+DD1.sort_values(by=['Complaint Type'], ascending= False)
+
+#compliant Status
+group3 = BB[['Complaint Type', 'Status']]
+EE = group3.groupby(['Status'], as_index= False).count()
+EE
+
+
+
+# Relationship of complaints and characteristics of house or building
+
+# Get Dummies
+
+dummies= pd.get_dummies(BB['Complaint Type'])
+
+merge = pd.concat([BB, dummies], axis='columns')
+
+final= merge.drop(['Complaint Type','HEATING'], axis= 'columns')
+final
+
+# merge the Two data set
+
+df_merged_comp = pd.merge(BX_df1, final, left_on='Address', right_on='Incident Address', how='inner').dropna()
+df_merged_comp.head()
+
+# Lets see Relationship of complaints and characteristics of house or building 
+
+from scipy import stats
+import seaborn as sns
+
+# Complaint Vs NumFloors
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['NumFloors'])
+print( pearson_coef, p_value)
+
+# Complaint Vs BldgArea
+
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['BldgArea'])
+print( pearson_coef, p_value)
+
+# Complaint Vs BldgDepth
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['BldgDepth'])
+print( pearson_coef, p_value)
+
+# Complaint Vs BuiltFAR
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['BuiltFAR'])
+print( pearson_coef, p_value)
+
+# Complaint Vs CommFAR
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['CommFAR'])
+print( pearson_coef, p_value)
+
+# Complaint Vs FacilFAR
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['FacilFAR'])
+print( pearson_coef, p_value)
+
+# Complaint Vs NumBldgs
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['NumBldgs'])
+print( pearson_coef, p_value)
+
+# Complaint Vs OfficeArea
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['OfficeArea'])
+print( pearson_coef, p_value)
+
+# Complaint Vs YearBuilt
+pearson_coef, p_value = stats.pearsonr(df_merged_comp['HEAT/HOT WATER'], df_merged_comp['YearBuilt'])
+print( pearson_coef, p_value)
+
+# Predictive model built for a future prediction of possibility of Complaints
+
+# Define X, and y for the dataset
+
+x = df_merged[['BldgArea', 'BldgDepth', 'BuiltFAR', 'CommFAR', 'FacilFAR',
+       'Lot', 'LotArea', 'LotDepth', 'NumBldgs', 'NumFloors', 'OfficeArea',
+       'ResArea', 'ResidFAR', 'RetailArea', 'YearBuilt']].values
+
+y = df_merged[['Complaint Type']]
+
+
+# Train/Test dataset
+# Split our dataset into train and test set
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=3)
+
+# Modeling
+
+from sklearn.tree import DecisionTreeClassifier
+compTree = DecisionTreeClassifier(criterion="gini", max_depth = None)
+compTree # it shows the default parameters
+
+compTree.fit(X_train,y_train)
+
+
+# Predict using our Test set
+
+predTree = compTree.predict(X_test)
+print(predTree[0:5])
+
+#Evaluation
+
+from sklearn import metrics
+print("DecisionTrees's Accuracy: ", metrics.accuracy_score(y_test, predTree)
